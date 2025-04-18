@@ -8,18 +8,18 @@ import asyncio
 
 load_dotenv()
 
-# print(bool(os.getenv("GEMINI_API_KEY")))
+
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 server_params = StdioServerParameters(
-    command="npx",  # Executable
+    command="npx",  
     args=[
         "-y",
         "@openbnb/mcp-server-airbnb",
         "--ignore-robots-txt",
-    ],  # Optional command line arguments
-    env=None,  # Optional environment variables
+    ],  
+    env=None,  
 )
 
 async def run():
@@ -29,11 +29,7 @@ async def run():
             await session.initialize()
 
             mcp_tools = await session.list_tools()
-            # print()
-            # print()
-            # for tool in mcp_tools.tools:
-            #     print(tool)
-            print("123456")
+
             tools = types.Tool(function_declarations=[
                 {
                     "name":tool.name,
@@ -42,26 +38,27 @@ async def run():
                 }
                 for tool in mcp_tools.tools
             ])
-            # print("\n\n*-*-*-*-*-*-*-*-*-*-*-*-*-*\n\n")
-            # print(tools)
-            # print("\n\n*-*-*-*-*-*-*-*-*-*-*-*-*-*\n\n")
+        
 
             # Send request with function declarations
-            print(1234567)
             response = client.models.generate_content(
-                model="gemini-2.0-flash",  # Or your preferred model supporting function calling
+                model="gemini-2.0-flash", 
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.7,
                     tools=[tools],
-                ),  # Example other config
+                ),  
             )
 
-            print("\n\n*-*-*-*-*-*-*-*-*-*-*-*-*-*\n\n")
-            print(response)
-            print("\n\n*-*-*-*-*-*-*-*-*-*-*-*-*-*\n\n")
-            await run()
-            # return response
+
+            if response.candidates[0].content.parts[0].function_call:
+                print(response.candidates[0])
+                function_call = response.candidates[0].content.parts[0].function_call
+                print(f"Function to call: {function_call.name}")
+                print(f"Arguments: {function_call.args}")
+            else:
+                print("No function call found in the response.")
+                print(response.text)
 
 result = asyncio.run(run())
 print(result)
